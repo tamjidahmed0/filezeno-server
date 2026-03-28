@@ -26,6 +26,15 @@ export class TokenService {
 
 
 
+    async generateAccessTokens(id: string) {
+        const accessExpiry = (process.env.JWT_EXPIRES_IN || '15m') as any;
+        const accessSecret = process.env.JWT_SECRET || 'access-secret';
+        const accessToken = this.jwtService.signAsync({ id }, { secret: accessSecret, expiresIn: accessExpiry })
+        return accessToken;
+    }
+
+
+
 
     async saveRefreshToken(userId: string, token: string) {
         const hashed = await bcrypt.hash(token, 10);
