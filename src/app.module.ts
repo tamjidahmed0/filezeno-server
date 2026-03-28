@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
+import { FoldersModule } from './folders/folders.module';
+import { FilesModule } from './files/files.module';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
+
 
 
 @Module({
-  imports: [PrismaModule],
+  imports: [FoldersModule, FilesModule, ConfigModule.forRoot(), AuthModule],
   controllers: [],
   providers: [],
 })
