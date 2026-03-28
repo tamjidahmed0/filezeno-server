@@ -10,16 +10,16 @@ export class TokenService {
         private prisma: PrismaService
     ) { }
 
-    async generateTokens(userId: string, email: string, name: string) {
-        const payload = { sub: userId, email, name };
+    async generateTokens(id: string) {
+
         const accessExpiry = (process.env.JWT_EXPIRES_IN || '15m') as any;
         const refreshExpiry = (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any;
         const accessSecret = process.env.JWT_SECRET || 'access-secret';
         const refreshSecret = process.env.JWT_REFRESH_SECRET || 'refresh-secret';
 
         const [accessToken, refreshToken] = await Promise.all([
-            this.jwtService.signAsync(payload, { secret: accessSecret, expiresIn: accessExpiry }),
-            this.jwtService.signAsync(payload, { secret: refreshSecret, expiresIn: refreshExpiry }),
+            this.jwtService.signAsync({ id }, { secret: accessSecret, expiresIn: accessExpiry }),
+            this.jwtService.signAsync({ id }, { secret: refreshSecret, expiresIn: refreshExpiry }),
         ]);
         return { accessToken, refreshToken };
     }

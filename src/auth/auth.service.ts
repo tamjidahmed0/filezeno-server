@@ -45,7 +45,7 @@ export class AuthService {
             });
         }
 
-        const tokens = await this.tokenService.generateTokens(user.id, user.email, user.name);
+        const tokens = await this.tokenService.generateTokens(user.id);
         await this.tokenService.saveRefreshToken(user.id, tokens.refreshToken);
 
         const { refreshToken, ...safeUser } = user;
