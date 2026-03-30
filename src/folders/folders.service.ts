@@ -225,6 +225,24 @@ export class FoldersService {
 
 
 
+    // ───────────────── RESTORE FROM TRASH ─────────────────
+    async restoreFromTrash(userId: string, folderId: string) {
+        const folder = await this.prisma.folder.findFirst({
+            where: { id: folderId, ownerId: userId },
+            select: { id: true, name: true, path: true },
+        });
+        if (!folder) throw new NotFoundException('Folder not found');
+
+        await this.prisma.folder.updateMany({
+            where: { id: folderId },
+            data: { isTrashed: false, trashedAt: null },
+        });
+
+        return { message: 'Folder restored' };
+    }
+
+
+
 
     private async logActivity(userId: string, type: any, folderId?: string, metadata?: any) {
         await this.prisma.activity.create({

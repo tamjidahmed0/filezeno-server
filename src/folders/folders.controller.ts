@@ -91,4 +91,14 @@ export class FoldersController {
     }
 
 
+    // ───────────────── RESTORE FROM TRASH ─────────────────
+    @Patch(':id/restore')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Restore folder from trash' })
+    restore(@Req() req, @Param('id') id: string) {
+        const userId = req.user.id
+        return this.foldersService.restoreFromTrash(userId, id);
+    }
+
+
 }
