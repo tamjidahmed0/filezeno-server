@@ -1,4 +1,59 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller, Post, Req, Get, UseGuards, Query, Param } from '@nestjs/common';
+import { FoldersService } from './folders.service';
+import { ApiOperation } from '@nestjs/swagger';
+import { CreateFolderDto } from './dto/folders.dto';
+import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
+
 
 @Controller('folders')
-export class FoldersController {}
+export class FoldersController {
+    constructor(private foldersService: FoldersService) { }
+
+    // ───────────────── CREATE ─────────────────
+    @Post()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Create a new folder' })
+    create(@Req() req, @Body() dto: CreateFolderDto) {
+        const userId = req.user.id
+        return this.foldersService.createFolder(userId, dto);
+    }
+
+
+
+    // ───────────────── LIST ─────────────────
+    @Get()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'List folders (optionally by parent)' })
+    list(@Req() req, @Query('parentId') parentId?: string) {
+        const userId = req.user.id
+        return this.foldersService.getFolders(userId, parentId);
+    }
+
+
+
+    // ───────────────── GET ONE ─────────────────
+    @Get(':id')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get folder by ID with children' })
+    getOne(@Req() req, @Param('id') id: string) {
+        const userId = req.user.id
+        return this.foldersService.getFolderById(userId, id);
+    }
+
+
+
+    // ───────────────── BREADCRUMB ─────────────────
+    @Get(':id/breadcrumb')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get breadcrumb path for a folder' })
+    breadcrumb(@Req() req, @Param('id') id: string) {
+        const userId = req.user.id
+        return this.foldersService.getBreadcrumb(userId, id);
+    }
+
+
+
+
+
+
+}

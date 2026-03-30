@@ -4,7 +4,8 @@ import { FoldersController } from './folders.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
-  providers: [FoldersService, PrismaModule],
+  imports : [PrismaModule],
+  providers: [FoldersService],
   controllers: [FoldersController]
 })
 export class FoldersModule {}
