@@ -1,6 +1,8 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateFolderDto } from './dto/folders.dto';
+import { CreateFolderDto, RenameFolderDto } from './dto/folders.dto';
+import { updateDescendantPathsService } from 'src/helpers/updateDescendantPaths.service';
+
 
 
 
@@ -8,7 +10,11 @@ import { CreateFolderDto } from './dto/folders.dto';
 @Injectable()
 export class FoldersService {
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private updateDescendantPaths: updateDescendantPathsService,
+
+    ) { }
 
 
 
@@ -113,6 +119,33 @@ export class FoldersService {
         }
 
         return breadcrumb;
+    }
+
+
+    // ───────────────── RENAME ─────────────────
+    async renameFolder(userId: string, folderId: string, dto: RenameFolderDto) {
+
+        const folder = await this.prisma.folder.findFirst({
+            where: { id: folderId, ownerId: userId },
+            select: { id: true, name: true, path: true },
+        });
+        if (!folder) throw new NotFoundException('Folder not found');
+
+        // Update path for this folder and all descendants
+        const newPath = folder.path.replace(/\/[^/]+$/, `/${dto.name}`);
+        await this.updateDescendantPaths.updateDescendantPaths(folder.path, newPath);
+
+        const updated = await this.prisma.folder.update({
+            where: { id: folderId },
+            data: { name: dto.name, path: newPath },
+        });
+
+        await this.logActivity(userId, 'RENAME', folderId, {
+            oldName: folder.name,
+            newName: dto.name,
+        });
+
+        return updated;
     }
 
 

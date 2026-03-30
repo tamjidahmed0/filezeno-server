@@ -1,7 +1,7 @@
-import { Body, Controller, Post, Req, Get, UseGuards, Query, Param } from '@nestjs/common';
+import { Body, Controller, Post, Req, Get, UseGuards, Query, Param, Patch } from '@nestjs/common';
 import { FoldersService } from './folders.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { CreateFolderDto } from './dto/folders.dto';
+import { CreateFolderDto, RenameFolderDto } from './dto/folders.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 
 
@@ -52,8 +52,18 @@ export class FoldersController {
     }
 
 
-
-
+    // ───────────────── RENAME ─────────────────
+    @Patch(':id/rename')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Rename a folder' })
+    rename(
+        @Req() req,
+        @Param('id') id: string,
+        @Body() dto: RenameFolderDto,
+    ) {
+        const userId = req.user.id
+        return this.foldersService.renameFolder(userId, id, dto);
+    }
 
 
 }
