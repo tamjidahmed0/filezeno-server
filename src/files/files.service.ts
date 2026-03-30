@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,7 +13,7 @@ export class FilesService {
 
     constructor(private prisma: PrismaService) { }
 
- 
+
     // ───────────────── UPLOAD ─────────────────
     async uploadFile(
         userId: string,
@@ -39,7 +39,7 @@ export class FilesService {
         if (BigInt(user.storageUsed) + BigInt(file.size) > BigInt(user.storageLimit)) {
             // Delete uploaded file
             fs.unlinkSync(file.path);
-            throw new BadRequestException('Storage quota exceeded'); 
+            throw new BadRequestException('Storage quota exceeded');
         }
 
         // Compute checksum
@@ -77,9 +77,44 @@ export class FilesService {
 
 
 
+    async getFileById(userId: string, fileId: string) {
+        const file = await this.prisma.file.findFirst({
+            where: { id: fileId, isTrashed: false },
+            include: { tags: true, versions: true },
+        });
+        if (!file) throw new NotFoundException('File not found');
+
+        // Check access: owner or has share
+        if (file.ownerId !== userId) {
+            const share = await this.prisma.share.findFirst({
+                where: {
+                    fileId,
+                    sharedWithId: userId,
+                    isActive: true,
+                },
+            });
+            if (!share) throw new ForbiddenException('Access denied');
+        }
+
+        return serializeFile(file);
+    }
 
 
 
+    // ───────────────── DOWNLOAD ─────────────────
+    async getFileForDownload(userId: string, fileId: string) {
+        const file = await this.getFileById(userId, fileId);
+
+        // Increment download count
+        await this.prisma.file.update({
+            where: { id: fileId },
+            data: { downloadCount: { increment: 1 } },
+        });
+
+        await this.logActivity(userId, 'DOWNLOAD', fileId);
+
+        return file;
+    }
 
 
 
