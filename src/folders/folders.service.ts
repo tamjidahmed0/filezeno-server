@@ -1,6 +1,6 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateFolderDto, RenameFolderDto } from './dto/folders.dto';
+import { CreateFolderDto, MoveFolderDto, RenameFolderDto } from './dto/folders.dto';
 import { updateDescendantPathsService } from 'src/helpers/updateDescendantPaths.service';
 
 
@@ -150,7 +150,73 @@ export class FoldersService {
 
 
 
+    // ───────────────── MOVE ─────────────────
+    async moveFolder(userId: string, folderId: string, dto: MoveFolderDto) {
+        const folder = await this.prisma.folder.findFirst({
+            where: { id: folderId, ownerId: userId },
+            select: { id: true, name: true, path: true },
+        });
+        if (!folder) throw new NotFoundException('Folder not found');
 
+        // Prevent moving folder into itself or its descendants
+        if (dto.parentId) {
+            if (dto.parentId === folderId) {
+                throw new BadRequestException('Cannot move folder into itself');
+            }
+
+            // isDescendant logic
+            let currentId: string | null = dto.parentId;
+            while (currentId) {
+                if (currentId === folderId) {
+                    throw new BadRequestException('Cannot move folder into its own descendant');
+                }
+                const f = await this.prisma.folder.findUnique({
+                    where: { id: currentId },
+                    select: { parentId: true },
+                });
+                currentId = f?.parentId || null;
+            }
+
+            const targetParent = await this.prisma.folder.findFirst({
+                where: { id: dto.parentId, ownerId: userId, isTrashed: false },
+            });
+            if (!targetParent) throw new NotFoundException('Target folder not found');
+        }
+
+        const newParentPath = dto.parentId
+            ? (await this.prisma.folder.findUnique({ where: { id: dto.parentId } }))!.path
+            : '';
+        const newPath = `${newParentPath}/${folder.name}`;
+
+        await this.updateDescendantPaths.updateDescendantPaths(folder.path, newPath);
+
+        const updated = await this.prisma.folder.update({
+            where: { id: folderId },
+            data: { parentId: dto.parentId || null, path: newPath },
+        });
+
+        await this.logActivity(userId, 'MOVE', folderId);
+        return updated;
+    }
+
+
+
+
+
+
+
+    // private async isDescendant(ancestorId: string, targetId: string): Promise<boolean> {
+    //     let currentId: string | null = targetId;
+    //     while (currentId) {
+    //         if (currentId === ancestorId) return true;
+    //         const folder = await this.prisma.folder.findUnique({
+    //             where: { id: currentId },
+    //             select: { parentId: true },
+    //         });
+    //         currentId = folder?.parentId || null;
+    //     }
+    //     return false;
+    // }
 
 
     private async logActivity(userId: string, type: any, folderId?: string, metadata?: any) {

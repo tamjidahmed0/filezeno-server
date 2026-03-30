@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Req, Get, UseGuards, Query, Param, Patch } from '@nestjs/common';
 import { FoldersService } from './folders.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { CreateFolderDto, RenameFolderDto } from './dto/folders.dto';
+import { CreateFolderDto, MoveFolderDto, RenameFolderDto } from './dto/folders.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 
 
@@ -63,6 +63,20 @@ export class FoldersController {
     ) {
         const userId = req.user.id
         return this.foldersService.renameFolder(userId, id, dto);
+    }
+
+
+    // ───────────────── MOVE ─────────────────
+    @Patch(':id/move')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Move folder to another parent' })
+    move(
+        @Req() req,
+        @Param('id') id: string,
+        @Body() dto: MoveFolderDto,
+    ) {
+        const userId = req.user.id
+        return this.foldersService.moveFolder(userId, id, dto);
     }
 
 
