@@ -30,10 +30,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Static files (uploaded content)
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads',
-  });
+
 
 
   // Swagger docs
