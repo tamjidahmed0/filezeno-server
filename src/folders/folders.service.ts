@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFolderDto, MoveFolderDto, RenameFolderDto } from './dto/folders.dto';
 import { updateDescendantPathsService } from 'src/helpers/updateDescendantPaths.service';
+import { TrashDescendantsService } from 'src/helpers/trashDescendants.service';
 
 
 
@@ -13,6 +14,7 @@ export class FoldersService {
     constructor(
         private prisma: PrismaService,
         private updateDescendantPaths: updateDescendantPathsService,
+        private trashDescendants: TrashDescendantsService,
 
     ) { }
 
@@ -201,22 +203,27 @@ export class FoldersService {
 
 
 
+    // ───────────────── TRASH ─────────────────
+    async moveToTrash(userId: string, folderId: string) {
+        const folder = await this.prisma.folder.findFirst({
+            where: { id: folderId, ownerId: userId },
+            select: { id: true, name: true, path: true },
+        });
+        if (!folder) throw new NotFoundException('Folder not found');
+
+        // Trash folder and all descendants recursively
+        await this.trashDescendants.trashDescendants(folderId);
+
+        const updated = await this.prisma.folder.update({
+            where: { id: folderId },
+            data: { isTrashed: true, trashedAt: new Date() },
+        });
+
+        await this.logActivity(userId, 'MOVE_TO_TRASH', folderId);
+        return updated;
+    }
 
 
-
-
-    // private async isDescendant(ancestorId: string, targetId: string): Promise<boolean> {
-    //     let currentId: string | null = targetId;
-    //     while (currentId) {
-    //         if (currentId === ancestorId) return true;
-    //         const folder = await this.prisma.folder.findUnique({
-    //             where: { id: currentId },
-    //             select: { parentId: true },
-    //         });
-    //         currentId = folder?.parentId || null;
-    //     }
-    //     return false;
-    // }
 
 
     private async logActivity(userId: string, type: any, folderId?: string, metadata?: any) {

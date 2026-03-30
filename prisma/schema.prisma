@@ -202,7 +202,7 @@ enum ActivityType {
   STAR
   UNSTAR
   CREATE_FOLDER
-  DELETE_FOLDER
+  MOVE_TO_TRASH
 }
 
 model Activity {

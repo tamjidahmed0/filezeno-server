@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Get, UseGuards, Query, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Post, Req, Get, UseGuards, Query, Param, Patch, Delete } from '@nestjs/common';
 import { FoldersService } from './folders.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateFolderDto, MoveFolderDto, RenameFolderDto } from './dto/folders.dto';
@@ -77,6 +77,17 @@ export class FoldersController {
     ) {
         const userId = req.user.id
         return this.foldersService.moveFolder(userId, id, dto);
+    }
+
+
+
+    // ───────────────── TRASH ─────────────────
+    @Delete(':id')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Move folder to trash' })
+    moveToTrash(@Req() req, @Param('id') id: string) {
+        const userId = req.user.id
+        return this.foldersService.moveToTrash(userId, id);
     }
 
 
