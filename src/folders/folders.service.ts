@@ -229,21 +229,44 @@ export class FoldersService {
     async restoreFromTrash(userId: string, folderId: string) {
         const folder = await this.prisma.folder.findFirst({
             where: { id: folderId, ownerId: userId },
-            select: { id: true, name: true, path: true },
         });
         if (!folder) throw new NotFoundException('Folder not found');
 
-        await this.prisma.folder.updateMany({
-            where: { id: folderId },
-            data: { isTrashed: false, trashedAt: null },
-        });
+        // Restore the folder and all its descendants recursively
+        await this.restoreRecursive(folderId);
 
+        // Log restore activity
         await this.logActivity(userId, 'RESTORE', folderId);
 
         return { message: 'Folder restored' };
     }
 
-    
+    // Helper function to restore a folder and its descendants recursively
+    private async restoreRecursive(folderId: string) {
+        // 1. Restore the current folder
+        await this.prisma.folder.update({
+            where: { id: folderId },
+            data: { isTrashed: false, trashedAt: null },
+        });
+
+        // 2. Restore all files directly inside this folder
+        await this.prisma.file.updateMany({
+            where: { folderId },
+            data: { isTrashed: false, trashedAt: null },
+        });
+
+        // 3. Find all child folders
+        const children = await this.prisma.folder.findMany({
+            where: { parentId: folderId },
+            select: { id: true },
+        });
+
+        // 4. Recursively restore each child folder
+        for (const child of children) {
+            await this.restoreRecursive(child.id);
+        }
+    }
+
 
     // ───────────────── GET TRASH ─────────────────
     async getTrash(userId: string) {
