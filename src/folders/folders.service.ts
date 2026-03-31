@@ -238,6 +238,8 @@ export class FoldersService {
             data: { isTrashed: false, trashedAt: null },
         });
 
+        await this.logActivity(userId, 'RESTORE', folderId);
+
         return { message: 'Folder restored' };
     }
 
