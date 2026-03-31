@@ -30,6 +30,16 @@ export class FoldersController {
     }
 
 
+    // ───────────────── GET TRASH ─────────────────
+    @Get('trash')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get trashed folders' })
+    trash(@Req() req) {
+        const userId = req.user.id
+        return this.foldersService.getTrash(userId);
+    }
+
+
 
     // ───────────────── GET ONE ─────────────────
     @Get(':id')
@@ -99,6 +109,7 @@ export class FoldersController {
         const userId = req.user.id
         return this.foldersService.restoreFromTrash(userId, id);
     }
+
 
 
 }

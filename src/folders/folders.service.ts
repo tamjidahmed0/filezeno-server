@@ -243,6 +243,15 @@ export class FoldersService {
         return { message: 'Folder restored' };
     }
 
+    
+
+    // ───────────────── GET TRASH ─────────────────
+    async getTrash(userId: string) {
+        return this.prisma.folder.findMany({
+            where: { ownerId: userId, isTrashed: true, parentId: null },
+            orderBy: { trashedAt: 'desc' },
+        });
+    }
 
 
 
