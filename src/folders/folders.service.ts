@@ -271,7 +271,7 @@ export class FoldersService {
     // ───────────────── GET TRASH ─────────────────
     async getTrash(userId: string) {
         return this.prisma.folder.findMany({
-            where: { ownerId: userId, isTrashed: true, parentId: null },
+            where: { ownerId: userId, isTrashed: true },
             orderBy: { trashedAt: 'desc' },
         });
     }
